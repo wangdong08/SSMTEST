@@ -1,0 +1,318 @@
+package com.hand.controller;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.faces.context.ResponseWriter;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import net.sf.json.JSONArray;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.hand.model.Page;
+import com.hand.model.User;
+import com.hand.service.UserService;
+/**
+ * 
+ * @author wangdong
+ * @since 2017/07/07
+ *
+ */
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+//	private static Logger logger = Logger.getLogger(TestMyBatis.class);
+
+	@Resource
+	private UserService userService;
+
+	/**
+	 * 初始化系统登录页面
+	 * 
+	 * @return
+	 */
+	@RequestMapping("/index")
+	public String index() {
+		return "login";
+//		return "userLogin";
+	}
+
+	/**
+	 * 用户登录
+	 * 
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping(value = "/userLogin", method = RequestMethod.POST)
+	public String useLogin(HttpServletRequest request, Model model) {
+		String name = request.getParameter("userName");
+		String pwd = request.getParameter("password");
+		System.out.println("userName= "+ name);
+		int loginFlag = userService.userLogin(name, pwd);
+		if (loginFlag == 1) {
+//			System.out.println("登录成功了。。。");
+			return "main";
+//			return userListEasyUi(request, model);
+//			return userList(request, model);
+//			// 登录成功加载用户列表
+//			List<User> userList = userService.userList();
+//			model.addAttribute("userList", userList);
+////			System.out.println(userList.get(0).toString());
+//			return "showUser";
+		} else {
+			return "loginFailed";
+		}
+	}
+
+	/**
+	 * 新增用户
+	 * 
+	 * @param request
+	 * @param model
+	 * @param user
+	 * @return
+	 */
+	@RequestMapping(value = "/addUser", method = RequestMethod.POST)
+	public String addUser(HttpServletRequest request, Model model, User user) {
+		userService.insertUser(user);
+		return userList(request, model);
+//		List<User> userList = userService.userList();
+//		model.addAttribute("userList", userList);
+//		return "showUser";
+	}
+
+	/**
+	 * 删除用户
+	 * 
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/deleteUser")
+	public String deleteUser(HttpServletRequest request, Model model) {
+		int userId = Integer.parseInt(request.getParameter("id"));
+		userService.deleteUser(userId);
+		return userList(request, model);
+//		List<User> userList = userService.userList();
+//		model.addAttribute("userList", userList);
+//		return "showUser";
+	}
+
+	/**
+	 * 修改用户
+	 * 
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/updateUser")
+	public String updateUser(HttpServletRequest request, Model model) {
+		int userId = Integer.parseInt(request.getParameter("id"));
+		String name = request.getParameter("user_name");
+		int age = Integer.parseInt(request.getParameter("age"));
+//		System.out.println(userId+name+age);
+//		User user1 = new User();
+//		User user = new User(userId,name,user1.getPassword(),age);
+		User user = new User();
+		user.setId(userId);
+		user.setUser_name(name);
+		user.setAge(age);
+		userService.updateUser(user);
+		return userList(request, model);
+//		List<User> userList = userService.userList();
+//		model.addAttribute("userList", userList);
+//		return "showUser";
+	}
+
+	/**
+	 * 用户列表
+	 * 
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/userList")
+	public String userList(HttpServletRequest request, Model model) {
+//		System.out.println("日志测试方法触发了我。。。");
+		List<User> userList = userService.userList();
+		model.addAttribute("userList", userList);
+		return "showUser";
+	}
+
+	/**
+	 * 根据ID查询用户
+	 * 
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/findUserByID")
+	public String findUserByID(HttpServletRequest request, Model model) {
+		int userId = Integer.parseInt(request.getParameter("id"));
+		User user = this.userService.getUserById(userId);
+		List<User> idList = new ArrayList<User>();
+		idList.add(user);
+//		System.out.println("是否有数据========="+idList.size());
+		model.addAttribute("userList", idList);
+		return "showUser";
+	}
+
+	/**
+	 * 根据用户名查询用户
+	 * 
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/findUserByName")
+	public String findUserByName(HttpServletRequest request, Model model) {
+		String userName = request.getParameter("name");
+		List<User> nameList = userService.findUserByName(userName);
+//		System.out.println("nameList.size() = " + nameList.size());
+		model.addAttribute("userList", nameList);
+		return "showUser";
+	}
+	
+	/**
+	 * log4j日志事物处理测试方法
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/logTest")
+	//@ResponseBody //将返回值变成字符串页面内容，不代表JSP文件名
+	@Transactional
+	public String logTest(HttpServletRequest request, Model model){
+		User user = new User();
+		user.setUser_name("logTest1");
+		user.setPassword("123");
+		user.setAge(50);
+		try {
+			userService.insertUser(user);
+		} catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException();
+		}
+		return userList(request, model);
+	}
+	
+//	/**
+//	 * log4j日志事物处理测试方法
+//	 * @return
+//	 */
+//	@RequestMapping("/logTest2")
+//	@ResponseBody
+//	@Transactional
+//	public String logTest2(){
+//		if(true){
+//			throw new RuntimeException();
+//		}
+//		return "1";
+//	}
+
+	/**
+	 * 框架搭建流程测试方法
+	 * 
+	 * @param request
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/showUser")
+	public String toIndex(HttpServletRequest request, Model model) {
+		int userId = Integer.parseInt(request.getParameter("id"));
+		User user = this.userService.getUserById(userId);
+		model.addAttribute("user", user);
+//		System.out.println("姓名:" + user.getUser_name().toString());
+		return "showUser";
+	}
+	
+	/** 
+	 * 初始化 “用户列表”JSP页面,具有分页功能 
+	 *  
+	 * @param request 
+	 * @param model 
+	 * @return 
+	 */  
+	@RequestMapping(value = "/userListPage", method = RequestMethod.GET)
+	public String showProductsByPage(HttpServletRequest request, Model model) {  
+	    String pageNow = request.getParameter("pageNow");  
+	    System.out.println("pageNow="+pageNow);
+	    Page page = null;  
+	  
+	    List<User> userList = new ArrayList<User>();  
+	  
+	    int totalCount = (int) userService.getProductsCount();  
+	  
+	    if (pageNow != null && pageNow.length() != 0) {  
+	        page = new Page(totalCount, Integer.parseInt(pageNow));  
+	        userList = userService.showProductsByPage(page.getStartPos(), page.getPageSize());  
+	    } else {  
+	        page = new Page(totalCount, 1);  
+	        userList = userService.showProductsByPage(page.getStartPos(), page.getPageSize());  
+	    }  
+	  
+	    model.addAttribute("userList", userList);  
+	    model.addAttribute("page", page);
+	    return "showUser";
+	}
+	
+//	/** 
+//	 * 初始化 “用户列表” JSP页面,具有分页功能 
+//	 *  
+//	 * @param request 
+//	 * @param model 
+//	 * @return 
+//	 */  
+//	@RequestMapping(value = "userListPage", method = RequestMethod.GET)  
+//	public String showMyProduct(HttpServletRequest request, Model model) {  
+//	    // 取得SESSION中的loginUser  
+//	    //User loginUser = (User) request.getSession().getAttribute("loginUser");  
+//	    // 判断SESSION是否失效  
+//	    //if (loginUser == null || "".equals(loginUser)) {  
+//	        //return "redirect:/";  
+//	    //}  
+//	  
+//	    //int loginUserId = loginUser.getUserId();  
+//	    //此处的productService是注入的IProductService接口的对象  
+//	    showProductsByPage(request, model);  
+//	  
+//	    return "showUser";  
+//	}
+	
+	
+	/**
+	 * 用户列表查询(Easy-UI DataGird数据源)
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 * @throws IOException
+	 */
+	@RequestMapping("/userListEasyUi")
+	public String userListEasyUi(HttpServletRequest request, HttpServletResponse response, Model model) throws IOException {
+		System.out.println("进来了。。。");
+		response.setContentType("text/html;charset=utf-8");//设置响应的编码格式，不然会出现中文乱码现象  
+        PrintWriter out = response.getWriter();  
+		List<User> userList = userService.userList();
+		//model.addAttribute("userList", userList);
+		//System.out.println(list.get(1).toString());
+		//String userList = JSONArray.fromObject(list).toString();
+		JSONArray jsonArray = JSONArray.fromObject(userList);
+		out.write(jsonArray.toString());  
+        out.flush();  
+        out.close(); 
+		return null;
+	}
+}
